@@ -1,0 +1,29 @@
+<html>
+<script type="text/javascript" src="/jexcel/jexcel.js"></script>
+<link rel="stylesheet" href="/jexcel/jexcel.css" type="text/css" />
+
+<script type="text/javascript" src="/jexcel/jsuites.js"></script>
+<link rel="stylesheet" href="/jexcel/jsuites.css" type="text/css" />
+
+<div id="spreadsheet"></div>
+
+<script>
+	var data = [
+		['US', 'Wholemeal', 'Yes', '2019-02-12'],
+		['CA;US;UK', 'Breakfast Cereals', 'Yes', '2019-03-01'],
+		['CA;BR', 'Grains', 'No', '2018-11-10'],
+		['BR', 'Pasta', 'Yes', '2019-01-12'],
+	];
+
+	jspreadsheet(document.getElementById('spreadsheet'), {
+		data: data,
+		columns: [
+			{ type: 'dropdown', width: '300', title: 'Product Origin', url: '/jspreadsheet/countries', autocomplete: true, multiple: true },
+			{ type: 'text', width: '200', title: 'Description' },
+			{ type: 'dropdown', width: '100', title: 'Stock', source: ['No', 'Yes'] },
+			{ type: 'calendar', width: '100', title: 'Best before' },
+		]
+	});
+</script>
+
+</html>
