@@ -1,5 +1,8 @@
+# ルート(/)で呼び出されるファイル
 $HomePage = "index.html"
+# ポート番号
 $Port = "8080"
+# コンテンツタイプ辞書(ブラウザに送るデータの種類)
 $ContentType = @{
     "css" = "text/css"
     "js" = "application/javascript"
@@ -11,6 +14,7 @@ $ContentType = @{
     "*" = "application/octet-stream"
 }
 
+# リクエストがなくなるまでファイル送信を行う
 function fileSendToClient([ref]$response, $fileName) {
     $currentDirectory = Convert-Path .
     $fullPath = Join-Path $currentDirectory $fileName
@@ -34,18 +38,23 @@ function fileSendToClient([ref]$response, $fileName) {
 function main {
     $listener = New-Object Net.HttpListener
     $listener.Prefixes.Add("http://+:" + $Port + "/")
+    # localhostに繋げない環境対応
     # $listener.Prefixes.Add("http://+:" + $Port + "/Temporary_Listen_Addresses/")
 
     $listener.Start()
     while ($listener.IsListening) {
+        # GetContextでブロッキングされるため、Ctrl+Cが効かなくなる
         $context = $listener.GetContext()
         If ($page = $context.Request.Url.LocalPath -eq "/") {
+            # 最初のページ送信
             $page = $HomePage
         } else {
+            # CSS,Javascriptなどのファイルが要求された場合
             $page = $context.Request.RawUrl
         }
         $response = $context.Response
         If ($context.Request.IsLocal) {
+            # ローカルPCからの接続の場合
             fileSendToClient ([ref]$response) $page
         }
         Write-Output $context.Request.RawUrl
