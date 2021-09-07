@@ -46,7 +46,7 @@ function main {
         while ($listener.IsListening) {
             $task = $listener.GetContextAsync()
             # ブロッキングでCtrl+Cが効かなくなることへの対策
-            while ($task.AsyncWaitHandle.WaitOne(100) -eq $false) {}
+            while ($task.AsyncWaitHandle.WaitOne(500) -eq $false) {}
             $context = $task.GetAwaiter().GetResult()
 
             If ($page = $context.Request.Url.LocalPath -eq "/") {
