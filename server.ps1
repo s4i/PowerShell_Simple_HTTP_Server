@@ -1,4 +1,4 @@
-# ルート(/)で呼び出されるファイル
+# リクエストがルート(/)の場合、呼び出されるファイル
 $HomePage = "index.html"
 # ポート番号
 $Port = "8080"
@@ -38,29 +38,39 @@ function fileSendToClient([ref]$response, $fileName) {
 function main {
     $listener = New-Object Net.HttpListener
     $listener.Prefixes.Add("http://+:" + $Port + "/")
-    # localhostに繋げない環境対応
+    # localhostに繋げない環境への対応
     # $listener.Prefixes.Add("http://+:" + $Port + "/Temporary_Listen_Addresses/")
 
-    $listener.Start()
-    while ($listener.IsListening) {
-        # GetContextでブロッキングされるため、Ctrl+Cが効かなくなる
-        $context = $listener.GetContext()
-        If ($page = $context.Request.Url.LocalPath -eq "/") {
-            # 最初のページ送信
-            $page = $HomePage
-        } else {
-            # CSS,Javascriptなどのファイルが要求された場合
-            $page = $context.Request.RawUrl
+    try {
+        $listener.Start()
+        while ($listener.IsListening) {
+            $task = $listener.GetContextAsync()
+            # ブロッキングでCtrl+Cが効かなくなることへの対策
+            while ($task.AsyncWaitHandle.WaitOne(100) -eq $false) {}
+            $context = $task.GetAwaiter().GetResult()
+
+            If ($page = $context.Request.Url.LocalPath -eq "/") {
+                # 最初のページ送信
+                $page = $HomePage
+            } else {
+                # CSS,Javascriptなどのファイルが要求された場合
+                $page = $context.Request.RawUrl
+            }
+            $response = $context.Response
+            If ($context.Request.IsLocal) {
+                # ローカルPCからの接続の場合
+                fileSendToClient ([ref]$response) $page
+            }
+            Write-Output $context.Request.RawUrl
+            Write-Output $context.Response
+            $response.Close()
         }
-        $response = $context.Response
-        If ($context.Request.IsLocal) {
-            # ローカルPCからの接続の場合
-            fileSendToClient ([ref]$response) $page
-        }
-        Write-Output $context.Request.RawUrl
-        Write-Output $context.Response
-        $response.Close()
+    } catch {
+        Write-Error($_.Exception)
+    } finally {
+        $listener.Close()
     }
 }
 
 main
+exit
