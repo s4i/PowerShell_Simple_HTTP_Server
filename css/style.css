@@ -1,0 +1,9 @@
+/* 見出しをスクロールさせない */
+.jexcel thead {
+	/* 縦スクロール時に固定する */
+	position: -webkit-sticky;
+	position: sticky;
+	top: 0;
+	/* tbody内のセルより手前に表示する */
+	z-index: 1;
+}

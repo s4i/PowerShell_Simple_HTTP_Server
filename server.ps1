@@ -1,11 +1,16 @@
-# リクエストがルート(/)の場合、呼び出されるファイル
-$HomePage = "index.html"
 # ポート番号
 $Port = "8080"
+# URL
+$url = "http://localhost:" + $Port + "/"
+# localhostに繋げない環境への対応
+# $url = "http://+:" + $Port + "/Temporary_Listen_Addresses/"
+# リクエストがルート(/)の場合、呼び出されるファイル
+$HomePage = "index.html"
 # コンテンツタイプ辞書(ブラウザに送るデータの種類)
 $ContentType = @{
     "css" = "text/css"
     "js" = "application/javascript"
+    "json" = "application/json"
     "html" = "text/html"
     "pdf" = "application/pdf"
     "txt" = "text/plain"
@@ -25,6 +30,7 @@ function fileSendToClient([ref]$response, $fileName) {
         } else {
             $response.Value.ContentType = $ContentType["*"]
         }
+        $response.Value.ContentType = $response.Value.ContentType + ";charset=UTF-8"
         $content = [IO.File]::ReadAllBytes($fullPath)
         $response.Value.ContentLength64 = $content.Length
         $output = $response.Value.OutputStream
@@ -37,9 +43,8 @@ function fileSendToClient([ref]$response, $fileName) {
 
 function main {
     $listener = New-Object Net.HttpListener
-    $listener.Prefixes.Add("http://+:" + $Port + "/")
-    # localhostに繋げない環境への対応
-    # $listener.Prefixes.Add("http://+:" + $Port + "/Temporary_Listen_Addresses/")
+    $listener.Prefixes.Add($url)
+    Write-Output "* Running on $url (Press CTRL+C to quit)"
 
     try {
         $listener.Start()
