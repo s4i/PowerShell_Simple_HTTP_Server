@@ -30,7 +30,7 @@ function fileSendToClient([ref]$response, $fileName) {
         } else {
             $response.Value.ContentType = $ContentType["*"]
         }
-        $response.Value.ContentType = $response.Value.ContentType + ";charset=UTF-8"
+        $response.Value.ContentType += ";charset=UTF-8"
         $content = [IO.File]::ReadAllBytes($fullPath)
         $response.Value.ContentLength64 = $content.Length
         $output = $response.Value.OutputStream

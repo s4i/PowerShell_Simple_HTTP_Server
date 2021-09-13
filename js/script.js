@@ -1,129 +1,132 @@
-const ch_url = 'http://127.0.0.1:5000/api/json1';
-const wh_url = 'http://127.0.0.1:5000/api/json2';
-const title_url_dict = {
+const ch_url = 'http://127.0.0.1:5000/api/ch/';
+const wh_url = 'http://127.0.0.1:5000/api/wh/';
+const title_url = {
 	"Story1": ch_url,
 	"Story2": wh_url,
 };
+const command_url = {
+	"init": 'init',
+	"search": 'search',
+	"register": 'regiseter',
+};
+var GLOBAL_TABLE = null;
 
 // クラス定義
 // コンストラクタ
-// let Super = function (api_url) {
-// 	this.url = api_url;
-// };
-// Super.prototype.getURL = function () {
-// 	return this.url;
-// };
+let Base = function (api_url) {
+	this._url = api_url;
+};
+
+Base.prototype.getUrl = function () {
+	return this._url;
+};
+
 // インターフェース
-// Super.prototype.createTableData = function () {
-// 	throw new Error('Not Implemented');
-// };
+Base.prototype.createTable = function () {
+	// 実装を強制
+	throw new Error('Not Implemented');
+};
+
 // 継承
-// let inherits = function (child, parent) {
-// 	Object.setPrototypeOf(child.prototype, parent.prototype);
-// };
+let inherits = function (child, parent) {
+	Object.setPrototypeOf(child.prototype, parent.prototype);
+};
 
 // 子クラス1
-// let CH = function (api_url) {
-// 	Super.call(this, api_url);
-// 	this.response = {};
-// };
-// CH.prototype.setResponse = function (value) {
-// 	this.response = value;
-// };
-// CH.prototype.getResponse = function () {
-// 	return this.response;
-// };
-// inherits(CH, Super);
+let CH = function (api_url) {
+	Base.call(this, api_url);
+};
+// 継承実行
+inherits(CH, Base);
 
-// CH.prototype.createTableData = function () {
-// };
-
-let getJson = function (url) {
-	'use strict';
+CH.prototype.createTable = function (command) {
+	// ダウンロード
 	jSuites.ajax({
-		// url: this.getURL(),
-		url: url,
+		url: this.getUrl(),
 		method: 'POST',
+		data: null,
 		dataType: 'json',
 		success: function (result) {
-			let response = result.data ? result.data : result;
-			createTableData(response);
+			let response = result;
+			if (command === 'init') {
+				createTable(response);
+			} else {
+				updateTable(response);
+			}
+		},
+		error: function (err, result) {
+			alert('通信に失敗しました。');
 		},
 	});
 
-	let createTableData = function (json_dict) {
-		if (typeof json_dict === 'undefined' || Object.keys(json_dict).length <= 0) return;
-
-		let data = [
-			[json_dict.start, json_dict.end, 'Yes', '2019/02/12'],
-			['US', 'Wholemeal', 'Yes', '2019/02/12'],
-			['CA;US;UK', 'Breakfast Cereals', 'Yes', '2019/03/01'],
-			['CA;BR', 'Grains', 'No', '2018/11/10'],
-			['BR', 'Pasta', 'Yes', '2019/01/12'],
-			[], [], [], [], [], [], [], [], [], [],
-			[], [], [], [], [], [], [], [], [], [],
-			[], [], [], [], [], [], [], [], [], [],
-			[], [], [], [], [], [], [], [], [], [],
-			[], [], [], [], [], [], [], [], [], [],
-			[], [], [], [], [], [], [], [], [], [],
-			[], [], [], [], [], [], [], [], [], [],
-		];
-
-		jspreadsheet(document.getElementById('spreadsheet'), {
-			data: data,
+	let createTable = function (response) {
+		let columns = response.columns ? response.columns : {};
+		let nestedHeaders = response.nestedHeaders !== undefined ? response.nestedHeaders : {};
+		GLOBAL_TABLE = jspreadsheet(document.getElementById('spreadsheet'), {
+			data: Array(100),
 			tableOverflow: true,
 			tableHeight: '70vh',
-			columns: [{
-					type: 'autocomplete',
-					title: 'Country',
-					width: '300',
-				},
-				{
-					type: 'dropdown',
-					title: 'Food',
-					width: '150',
-					source: ['Apples', 'Bananas', 'Carrots', 'Oranges', 'Cheese']
-				},
-				{
-					type: 'checkbox',
-					title: 'Stock',
-					width: '100'
-				},
-				{
-					type: 'text',
-					title: 'Date',
-					width: '100'
-				},
-			],
-			nestedHeaders: [
-				[{
-					title: 'Supermarket information',
-					colspan: '4',
-				}, ],
-				[{
-						title: 'Location',
-						colspan: '1',
-					},
-					{
-						title: ' Other Information',
-						colspan: '3'
-					}
-				],
-			],
 			columnDrag: true,
+			columns: columns,
+			nestedHeaders: nestedHeaders,
+			allowComments: true,
+			contextMenu: function (obj, x, y, e) {
+				// 右クリックの定義の上書き
+				var items = [];
+				// Save
+				if (obj.options.allowExport) {
+					items.push({
+						title: obj.options.text.saveAs,
+						// shortcut: 'Ctrl + S',
+					});
+				}
+				return items;
+			}
 		});
+	};
+
+	let updateTable = function (response) {
+		let data = {};
+		console.log(response);
+		if (response.data === undefined) {
+			alert('keyが存在しない');
+			return;
+		} else {
+			if (response.data.length <= 100) {
+				GLOBAL_TABLE.setData(response.data.concat(Array(100 - response.data.length)));
+			}
+		}
 	};
 };
 
+// // 初期表示
+window.onload = function () {
+	'use strict';
+	let page_title = document.getElementById('title').textContent;
+	let instance = new CH(title_url[page_title] + command_url.init);
+	instance.createTable('init');
+};
 
-// 右クリックの定義の上書き
-let page_title = document.getElementById('title').textContent;
-// let instance = new CH(title_url_dict[page_title]);
-getJson(title_url_dict[page_title]);
-// createTableData();
+// 検索ボタン
+let search_button = document.querySelector('button[name="search"]');
+search_button.addEventListener('click', function () {
+	'use strict';
+	let page_title = document.getElementById('title').textContent;
+	let instance = new CH(title_url[page_title] + command_url.search);
+	instance.createTable('search');
+});
+
+// 登録ボタン
+let register_button = document.querySelector('button[name="register"]');
+register_button.addEventListener('click', function () {
+	'use strict';
+	let page_title = document.getElementById('title').textContent;
+	let instance = new CH(title_url[page_title] + command_url.register);
+	instance.createTable('register');
+});
 
 // 子クラス2
 // let WH = function (api_url) {
-// 	Super.call(this, api_url);
+// 	Base.call(this, api_url);
 // };
-// inherits(WH, Super);
+// inherits(WH, Base);
